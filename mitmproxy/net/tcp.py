@@ -617,25 +617,28 @@ class TCPServer:
         try:
             while not self.__shutdown_request:
                 r, w_, e_ = select.select([self.socket], [], [], poll_interval)
-                if self.socket in r:
-                    connection, client_address = self.socket.accept()
-                    t = basethread.BaseThread(
-                        "TCPConnectionHandler ({}: {}:{} -> {}:{})".format(
-                            self.__class__.__name__,
-                            client_address[0],
-                            client_address[1],
-                            self.address[0],
-                            self.address[1],
-                        ),
-                        target=self.connection_thread,
-                        args=(connection, client_address),
-                    )
-                    t.setDaemon(1)
-                    try:
-                        t.start()
-                    except threading.ThreadError:
-                        self.handle_error(connection, client_address)
-                        connection.close()
+                try:
+                    if self.socket in r:
+                        connection, client_address = self.socket.accept()
+                        t = basethread.BaseThread(
+                            "TCPConnectionHandler ({}: {}:{} -> {}:{})".format(
+                                self.__class__.__name__,
+                                client_address[0],
+                                client_address[1],
+                                self.address[0],
+                                self.address[1],
+                            ),
+                            target=self.connection_thread,
+                            args=(connection, client_address),
+                        )
+                        t.setDaemon(1)
+                        try:
+                            t.start()
+                        except threading.ThreadError:
+                            self.handle_error(connection, client_address)
+                            connection.close()
+                except Exception as ext:
+                    print ("error in client address ", ext)
         finally:
             self.__shutdown_request = False
             self.__is_shut_down.set()
