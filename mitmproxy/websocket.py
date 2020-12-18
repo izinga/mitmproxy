@@ -1,5 +1,6 @@
 import time
 import queue
+import warnings
 from typing import List, Optional, Union
 
 from wsproto.frame_protocol import CloseReason
@@ -47,13 +48,19 @@ class WebSocketMessage(serializable.Serializable):
         else:
             return "binary message: {}".format(strutils.bytes_to_escaped_str(self.content))
 
-    def kill(self):
+    def kill(self):  # pragma: no cover
         """
         Kill this message.
 
         It will not be sent to the other endpoint. This has no effect in streaming mode.
         """
-        self.killed = True
+        warnings.warn(
+            "WebSocketMessage.kill is deprecated, set an empty content instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        # empty str or empty bytes.
+        self.content = type(self.content)()
 
 
 class WebSocketFlow(flow.Flow):
@@ -135,7 +142,7 @@ class WebSocketFlow(flow.Flow):
     def message_info(self, message: WebSocketMessage) -> str:
         return "{client} {direction} WebSocket {type} message {direction} {server}{endpoint}".format(
             type=message.type,
-            client=human.format_address(self.client_conn.address),
+            client=human.format_address(self.client_conn.peername),
             server=human.format_address(self.server_conn.address),
             direction="->" if message.from_client else "<-",
             endpoint=self.handshake_flow.request.path,
